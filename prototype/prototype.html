@@ -121,7 +121,21 @@
             <!-- 1. HOME / USER DASHBOARD VIEW -->
             <div id="home-view" class="content-view active p-4 space-y-5">
                 <h2 class="text-2xl font-bold text-gray-800" data-lang-key="dashboardTitle">Your Dashboard Summary</h2>
-                
+                    <!-- Gamification Summary (Points, Streak, Progress) -->
+                    <div id="gamification-card" class="bg-white p-4 rounded-xl card-shadow border-l-4 border-green-400 flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-14 h-14 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-white text-lg font-bold" id="points-bubble">0</div>
+                            <div>
+                                <div class="text-sm text-gray-500">Kisan Points</div>
+                                <div class="font-semibold text-gray-800" id="points-text">0 pts</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm text-gray-500">Streak</div>
+                            <div class="font-semibold text-gray-800" id="streak-text">0 days</div>
+                            <button id="open-badges-btn" class="mt-2 text-xs bg-amber-100 hover:bg-amber-200 text-amber-800 px-3 py-1 rounded-lg">Badges</button>
+                        </div>
+                    </div>
                 <!-- Quick Alerts & Weather Advisory -->
                 <div class="bg-yellow-100 border-l-4 border-yellow-500 p-4 rounded-lg card-shadow">
                     <div class="flex justify-between items-start">
@@ -133,6 +147,15 @@
                         </div>
                         <i data-lucide="chevron-right" class="w-5 h-5 text-yellow-500"></i>
                     </div>
+                </div>
+
+                <!-- Daily Tasks / Challenges -->
+                <div class="bg-white p-4 rounded-xl card-shadow">
+                    <h3 class="font-bold text-lg mb-2 flex items-center"><i data-lucide="diamond" class="w-5 h-5 text-indigo-500 mr-2"></i> Daily Tasks</h3>
+                    <ul id="tasks-list" class="space-y-2 text-sm text-gray-700">
+                        <!-- Items injected by JS -->
+                    </ul>
+                    <div class="mt-3 text-xs text-gray-500">Complete tasks to earn Kisan Points and unlock badges.</div>
                 </div>
 
                 <!-- Key Metrics Grid -->
@@ -349,6 +372,23 @@
     <div id="message-box" class="fixed bottom-20 z-50 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-xl opacity-0 transition-opacity duration-300 pointer-events-none">
         Feature Name: Message
     </div>
+
+    <!-- Badges Modal -->
+    <div id="badges-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center p-4 z-60">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden p-4">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="font-bold text-lg">Your Badges</h3>
+                <button id="close-badges" class="text-gray-500 hover:text-gray-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div id="badges-list" class="grid grid-cols-3 gap-3">
+                <!-- badges injected here -->
+            </div>
+            <div class="mt-4 text-xs text-gray-500">Earn badges by completing daily tasks and engaging with features.</div>
+        </div>
+    </div>
+
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-70"></canvas>
     
     <!-- AI VOICE / VIDEO MODAL (Replaces AI Assistant Modal) -->
     <div id="voice-video-modal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center p-4 z-50">
@@ -851,6 +891,239 @@
             // Simulate home click to initialize the nav bar correctly behind the splash screen
             document.getElementById('nav-home').click(); 
         };
+
+        // --- GAMIFICATION LOGIC (Points, Tasks, Badges) ---
+        const STORAGE_KEY = 'kisan_gamification_v1';
+
+        // Default state
+        const defaultState = {
+            points: 0,
+            streak: 0,
+            lastActiveDay: null,
+            tasks: [
+                { id: 'task_detect', title: 'Detect a crop disease', points: 10, completed: false },
+                { id: 'task_market', title: 'Check marketplace prices', points: 5, completed: false },
+                { id: 'task_watch', title: 'Watch a tutorial', points: 5, completed: false }
+            ],
+            badges: []
+        };
+
+        let gamestate = loadState();
+
+        function loadState() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (!raw) return { ...defaultState };
+                const parsed = JSON.parse(raw);
+                // Merge defaults for any missing keys
+                return { ...defaultState, ...parsed };
+            } catch (e) {
+                console.error('Failed to load gamestate:', e);
+                return { ...defaultState };
+            }
+        }
+
+        function saveState() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(gamestate));
+        }
+
+        const pointsBubble = document.getElementById('points-bubble');
+        const pointsText = document.getElementById('points-text');
+        const streakText = document.getElementById('streak-text');
+        const tasksList = document.getElementById('tasks-list');
+        const badgesModal = document.getElementById('badges-modal');
+        const badgesList = document.getElementById('badges-list');
+        const openBadgesBtn = document.getElementById('open-badges-btn');
+        const closeBadgesBtn = document.getElementById('close-badges');
+
+        // Simple confetti implementation (small, dependency free)
+        const confettiCanvas = document.getElementById('confetti-canvas');
+        const confettiCtx = confettiCanvas.getContext('2d');
+        function resizeConfetti() {
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeConfetti);
+        resizeConfetti();
+
+        function spawnConfetti() {
+            const pieces = [];
+            const colors = ['#f59e0b','#ef4444','#10b981','#3b82f6','#a78bfa'];
+            for (let i = 0; i < 40; i++) {
+                pieces.push({
+                    x: Math.random() * confettiCanvas.width,
+                    y: -Math.random() * 200,
+                    vx: (Math.random() - 0.5) * 4,
+                    vy: Math.random() * 4 + 2,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    size: Math.random() * 6 + 4,
+                    rot: Math.random() * Math.PI
+                });
+            }
+
+            let t = 0;
+            function frame() {
+                t += 1;
+                confettiCtx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+                for (const p of pieces) {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.05; // gravity
+                    p.rot += 0.1;
+                    confettiCtx.save();
+                    confettiCtx.translate(p.x, p.y);
+                    confettiCtx.rotate(p.rot);
+                    confettiCtx.fillStyle = p.color;
+                    confettiCtx.fillRect(-p.size/2, -p.size/2, p.size, p.size * 0.6);
+                    confettiCtx.restore();
+                }
+                if (t < 120) requestAnimationFrame(frame);
+                else confettiCtx.clearRect(0,0,confettiCanvas.width, confettiCanvas.height);
+            }
+            requestAnimationFrame(frame);
+        }
+
+        function updateGamificationUI() {
+            pointsBubble.textContent = gamestate.points;
+            pointsText.textContent = `${gamestate.points} pts`;
+            streakText.textContent = `${gamestate.streak} days`;
+
+            // Render tasks
+            tasksList.innerHTML = '';
+            gamestate.tasks.forEach(task => {
+                const li = document.createElement('li');
+                li.className = 'flex items-center justify-between p-2 border rounded-md';
+                li.innerHTML = `<div class="flex items-center space-x-2"><input type="checkbox" ${task.completed ? 'checked' : ''} data-task-id="${task.id}" class="task-checkbox"> <div><div class="font-semibold">${task.title}</div><div class="text-xs text-gray-500">+${task.points} pts</div></div></div>`;
+                const btn = document.createElement('button');
+                btn.className = 'text-sm text-green-600 font-semibold';
+                btn.textContent = task.completed ? 'Completed' : 'Complete';
+                btn.disabled = task.completed;
+                btn.addEventListener('click', () => completeTask(task.id));
+                li.appendChild(btn);
+                tasksList.appendChild(li);
+            });
+
+            // Badges grid
+            badgesList.innerHTML = '';
+            const predefined = getBadgesCatalog();
+            predefined.forEach(b => {
+                const div = document.createElement('div');
+                const earned = gamestate.badges.includes(b.id);
+                div.className = `p-2 rounded-lg text-center ${earned ? 'bg-amber-50' : 'bg-gray-100 opacity-70'}`;
+                div.innerHTML = `<div class="text-2xl">${b.icon}</div><div class="text-xs font-semibold mt-1">${b.title}</div><div class="text-[10px] text-gray-500">${earned ? 'Earned' : 'Locked'}</div>`;
+                badgesList.appendChild(div);
+            });
+        }
+
+        function getBadgesCatalog() {
+            return [
+                { id: 'badge_first_detect', title: 'First Detection', icon: '🔍' },
+                { id: 'badge_market_explorer', title: 'Market Explorer', icon: '🛒' },
+                { id: 'badge_streak_7', title: '7-Day Streak', icon: '🔥' }
+            ];
+        }
+
+        function completeTask(taskId) {
+            const task = gamestate.tasks.find(t => t.id === taskId);
+            if (!task || task.completed) return;
+            task.completed = true;
+            awardPoints(task.points);
+            saveState();
+            updateGamificationUI();
+            spawnConfetti();
+            maybeAwardBadgeForTask(taskId);
+        }
+
+        function awardPoints(n) {
+            gamestate.points += n;
+            saveState();
+            updateGamificationUI();
+        }
+
+        function awardBadge(badgeId) {
+            if (!gamestate.badges.includes(badgeId)) {
+                gamestate.badges.push(badgeId);
+                saveState();
+                updateGamificationUI();
+                showTemporaryMessage('Badge earned!');
+                spawnConfetti();
+            }
+        }
+
+        function maybeAwardBadgeForTask(taskId) {
+            if (taskId === 'task_detect') awardBadge('badge_first_detect');
+            if (taskId === 'task_market') awardBadge('badge_market_explorer');
+        }
+
+        function showTemporaryMessage(text) {
+            messageBox.textContent = text;
+            const containerRect = appContainer.getBoundingClientRect();
+            messageBox.style.left = `${containerRect.left + containerRect.width / 2}px`;
+            messageBox.style.transform = 'translateX(-50%)';
+            messageBox.classList.remove('opacity-0', 'pointer-events-none');
+            messageBox.classList.add('opacity-100');
+            setTimeout(() => {
+                messageBox.classList.remove('opacity-100');
+                messageBox.classList.add('opacity-0', 'pointer-events-none');
+            }, 2500);
+        }
+
+        // Integrate with existing actions: detection and marketplace feature to award points
+        const originalSimulateDetection = window.simulateDetection;
+        window.simulateDetection = function() {
+            // call original behavior
+            originalSimulateDetection();
+            // after detection, award points and mark task complete
+            setTimeout(() => {
+                awardPoints(10);
+                const t = gamestate.tasks.find(x => x.id === 'task_detect');
+                if (t && !t.completed) { t.completed = true; saveState(); updateGamificationUI(); maybeAwardBadgeForTask(t.id); }
+            }, 3500);
+        };
+
+        // Wrap showFeatureMessage to award points for marketplace actions or watching tutorials
+        const originalShowFeatureMessage = window.showFeatureMessage;
+        window.showFeatureMessage = function(featureName) {
+            originalShowFeatureMessage(featureName);
+            // small heuristic: if featureName contains 'Market' or 'Buy' award market points
+            const name = (featureName || '').toLowerCase();
+            if (name.includes('market') || name.includes('buy') || name.includes('sell') || name.includes('seeds')) {
+                awardPoints(5);
+                const t = gamestate.tasks.find(x => x.id === 'task_market');
+                if (t && !t.completed) { t.completed = true; saveState(); updateGamificationUI(); maybeAwardBadgeForTask(t.id); }
+            }
+            if (name.includes('video') || name.includes('tutorial') || name.includes('watch')) {
+                awardPoints(5);
+                const t = gamestate.tasks.find(x => x.id === 'task_watch');
+                if (t && !t.completed) { t.completed = true; saveState(); updateGamificationUI(); }
+            }
+        };
+
+        // Open badges modal
+        openBadgesBtn.addEventListener('click', () => {
+            badgesModal.classList.remove('hidden');
+            badgesModal.classList.add('flex');
+        });
+        closeBadgesBtn.addEventListener('click', () => {
+            badgesModal.classList.remove('flex');
+            badgesModal.classList.add('hidden');
+        });
+
+        // Daily streak update (simple: increments if lastActiveDay != today)
+        function updateDailyStreak() {
+            const today = new Date().toDateString();
+            if (gamestate.lastActiveDay !== today) {
+                const yesterday = new Date(Date.now() - 24*60*60*1000).toDateString();
+                if (gamestate.lastActiveDay === yesterday) gamestate.streak += 1; else gamestate.streak = 1;
+                gamestate.lastActiveDay = today;
+                saveState();
+            }
+        }
+
+        // Initialize gamification after DOM ready
+        updateDailyStreak();
+        updateGamificationUI();
+
 
     </script>
 </body>
