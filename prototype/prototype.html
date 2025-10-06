@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kisan-Mitra: Swadeshi for Atmanirbhar Bharat</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Lucide Icons -->
+    <script type="module" src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        :root {
+            --primary-color: #16a34a; /* Green-700 (Green) */
+            --secondary-color: #4f46e5; /* Indigo-600 (Purple/Blue) */
+            --bg-color: #f0fdf4; /* Green-50 */
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #e5e7eb; /* Light Gray background for the body */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        /* Mobile App Container styles */
+        #app-container {
+            width: 100%;
+            max-width: 420px; /* Standard mobile width limit */
+            height: 100vh;
+            max-height: 850px; /* Standard mobile height limit */
+            background-color: var(--bg-color);
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Prevent body scroll, container handles content scroll */
+            position: relative;
+            padding-bottom: 80px; /* Ensure content doesn't get fixed under the internal nav */
+        }
+        .content-view {
+            display: none;
+            overflow-y: auto;
+            flex-grow: 1;
+            padding-bottom: 120px; /* Increased space for the bottom navigation so content isn't hidden */
+        }
+        .content-view.active {
+            display: block;
+        }
+        .nav-item {
+            transition: color 0.2s, background-color 0.2s;
+        }
+        .nav-item.active {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+        .card-shadow {
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+        }
+        .feature-item:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ONBOARDING VIDEO MODAL (NEW SPLASH SCREEN) -->
+    <div id="onboarding-modal" class="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-6 transition-opacity duration-500">
+        <div class="w-full max-w-md space-y-6">
+            <h2 class="text-3xl font-bold text-green-600 text-center" data-lang-key="onboardingTitle">Welcome to Kisan-Mitra!</h2>
+            
+            <!-- Video Placeholder -->
+            <div class="relative w-full aspect-video bg-gray-200 rounded-xl shadow-xl overflow-hidden">
+                <iframe 
+                    width="100%" 
+                    height="100%" 
+                    src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=0&controls=1&modestbranding=1" 
+                    title="Kisan Mitra Tutorial Video" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen
+                    class="absolute inset-0"
+                ></iframe>
+                <!-- Placeholder overlay text for iframe restriction -->
+                 <div class="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 bg-opacity-80 text-white p-4">
+                    <i data-lucide="youtube" class="w-12 h-12 text-red-500 mb-2"></i>
+                    <p class="font-semibold text-center" data-lang-key="onboardingVideoTitle">Video Tutorial: How to use the App (Simulated)</p>
+                    <p class="text-xs mt-1 text-gray-300">In a real app, the tutorial video loads here.</p>
+                </div>
+            </div>
+            
+            <p class="text-center text-gray-600" data-lang-key="onboardingMessage">Watch this short video to learn how to access all our features, from market prices to disease detection.</p>
+
+            <button id="start-app-button" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-lg rounded-xl shadow-lg transition duration-200 flex items-center justify-center space-x-2">
+                 <i data-lucide="arrow-right" class="w-6 h-6"></i>
+                <span data-lang-key="startAppBtn">Start Using App</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Mobile App Container -->
+    <div id="app-container">
+
+        <!-- Header -->
+        <header class="bg-white shadow-md p-4 flex justify-between items-center sticky top-0 z-10">
+            <h1 class="text-xl font-bold text-gray-800">Kisan-<span class="text-green-600">Mitra</span></h1>
+            
+            <!-- Language and Voice/Video Button -->
+            <div class="flex space-x-3 items-center">
+                <button id="lang-toggle" class="text-sm px-2 py-1 rounded-lg bg-gray-100 text-gray-700 font-semibold transition duration-200">
+                    తెలుగు
+                </button>
+                <button id="voice-video-button" class="p-2 rounded-full bg-indigo-500 hover:bg-indigo-600 text-white shadow-lg transition duration-200">
+                    <i data-lucide="volume-2" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Content Views -->
+        <div id="views-container" class="flex-grow overflow-y-auto">
+
+            <!-- 1. HOME / USER DASHBOARD VIEW -->
+            <div id="home-view" class="content-view active p-4 space-y-5">
+                <h2 class="text-2xl font-bold text-gray-800" data-lang-key="dashboardTitle">Your Dashboard Summary</h2>
+                
+                <!-- Quick Alerts & Weather Advisory -->
+                <div class="bg-yellow-100 border-l-4 border-yellow-500 p-4 rounded-lg card-shadow">
+                    <div class="flex justify-between items-start">
+                        <div class="space-y-1">
+                            <h3 class="font-semibold text-yellow-800 flex items-center">
+                                <i data-lucide="cloud-lightning" class="w-5 h-5 mr-2"></i> Weather & Pest Advisory
+                            </h3>
+                            <p class="text-sm text-yellow-700" data-lang-key="weatherAlert">Local forecast: Clear skies, expected temp $30^\circ$C. *Pest Alert:* Low risk, continue Neem application.</p>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-5 h-5 text-yellow-500"></i>
+                    </div>
+                </div>
+
+                <!-- Key Metrics Grid -->
+                <div class="grid grid-cols-2 gap-4">
+                    <!-- Crop Health Summary -->
+                    <div class="bg-white p-4 rounded-xl card-shadow border-b-4 border-green-500">
+                        <i data-lucide="leaf" class="w-6 h-6 text-green-600 mb-2"></i>
+                        <p class="text-sm text-gray-500 font-medium" data-lang-key="healthSummary">Crop Health</p>
+                        <p class="text-2xl font-bold text-green-700">95% (Excellent)</p>
+                    </div>
+                    <!-- Yield Prediction -->
+                    <div class="bg-white p-4 rounded-xl card-shadow border-b-4 border-teal-500">
+                        <i data-lucide="bar-chart-3" class="w-6 h-6 text-teal-600 mb-2"></i>
+                        <p class="text-sm text-gray-500 font-medium" data-lang-key="yieldPrediction">Predicted Yield</p>
+                        <p class="text-2xl font-bold text-teal-700">1.8 Tons/Acre</p>
+                    </div>
+                    <!-- Sales & Mandi Price Summary -->
+                    <div class="bg-white p-4 rounded-xl card-shadow border-b-4 border-orange-500">
+                        <i data-lucide="hand-coins" class="w-6 h-6 text-orange-600 mb-2"></i>
+                        <p class="text-sm text-gray-500 font-medium" data-lang-key="marketPrice">Wheat Mandi Price</p>
+                        <p class="text-2xl font-bold text-orange-700">₹ 2,450/quintal</p>
+                    </div>
+                     <!-- Smart Inventory & Waste -->
+                    <div class="bg-white p-4 rounded-xl card-shadow border-b-4 border-red-500">
+                        <i data-lucide="warehouse" class="w-6 h-6 text-red-600 mb-2"></i>
+                        <p class="text-sm text-gray-500 font-medium" data-lang-key="inventoryTrack">Inventory Track</p>
+                        <p class="text-2xl font-bold text-red-700">30% High Risk</p>
+                    </div>
+                </div>
+
+                <!-- Quick Action Buttons -->
+                <div class="grid grid-cols-3 gap-3 pt-3">
+                    <button class="flex flex-col items-center p-3 bg-white rounded-xl card-shadow text-gray-700 feature-item" onclick="switchView('detection')">
+                        <i data-lucide="camera" class="w-6 h-6 text-red-500"></i>
+                        <span class="text-xs font-semibold mt-1" data-lang-key="quickDetect">Detect Disease</span>
+                    </button>
+                    <button class="flex flex-col items-center p-3 bg-white rounded-xl card-shadow text-gray-700 feature-item" onclick="switchView('market')">
+                        <i data-lucide="store" class="w-6 h-6 text-blue-500"></i>
+                        <span class="text-xs font-semibold mt-1" data-lang-key="quickSell">Sell Produce</span>
+                    </button>
+                    <button class="flex flex-col items-center p-3 bg-white rounded-xl card-shadow text-gray-700 feature-item" onclick="showFeatureMessage('Smart Reminders')">
+                        <i data-lucide="bell" class="w-6 h-6 text-purple-500"></i>
+                        <span class="text-xs font-semibold mt-1" data-lang-key="quickRemind">Reminders</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 2. MARKETPLACE VIEW -->
+            <div id="market-view" class="content-view p-4 space-y-5">
+                <h2 class="text-2xl font-bold text-gray-800" data-lang-key="marketTitle">Swadeshi Marketplace</h2>
+
+                <!-- Live Mandi Prices -->
+                <div class="bg-white p-4 rounded-xl card-shadow">
+                    <h3 class="font-bold text-xl text-orange-600 mb-3 flex items-center">
+                        <i data-lucide="gauge" class="w-5 h-5 mr-2"></i> Live Mandi Prices
+                    </h3>
+                    <ul class="space-y-2 text-gray-700 text-sm">
+                        <li class="flex justify-between border-b pb-1"><span>Wheat (గోధుమ)</span><span class="font-semibold text-orange-700">₹ 2,450/Q</span></li>
+                        <li class="flex justify-between border-b pb-1"><span>Rice (వరి)</span><span class="font-semibold text-orange-700">₹ 3,200/Q</span></li>
+                        <li class="flex justify-between"><span>Lentils (పప్పు)</span><span class="font-semibold text-orange-700">₹ 7,800/Q</span></li>
+                    </ul>
+                    <p class="text-xs text-gray-500 mt-3" data-lang-key="demandForecast">Demand Forecast: High demand for indigenous rice varieties next month.</p>
+                </div>
+
+                <!-- Buy / Sell Actions -->
+                <div class="grid grid-cols-2 gap-4">
+                    <button class="p-5 bg-green-500 hover:bg-green-600 text-white rounded-xl shadow-lg flex flex-col items-center justify-center h-28 feature-item" onclick="showFeatureMessage('Buy Indigenous Seeds')">
+                        <i data-lucide="shopping-basket" class="w-8 h-8"></i>
+                        <span class="mt-2 font-bold text-lg" data-lang-key="buySeeds">Buy Indigenous Seeds</span>
+                    </button>
+                    <button class="p-5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl shadow-lg flex flex-col items-center justify-center h-28 feature-item" onclick="showFeatureMessage('Sell Produce Locally')">
+                        <i data-lucide="tag" class="w-8 h-8"></i>
+                        <span class="mt-2 font-bold text-lg" data-lang-key="sellProduce">Sell Produce</span>
+                    </button>
+                </div>
+
+                <!-- Logistics & Digital Payments -->
+                <div class="flex justify-between space-x-4">
+                    <button class="w-1/2 p-3 bg-white rounded-xl card-shadow text-gray-700 flex items-center justify-center feature-item" onclick="showFeatureMessage('Logistics Support')">
+                         <i data-lucide="truck" class="w-5 h-5 mr-2 text-orange-500"></i> <span data-lang-key="logistics">Logistics Support</span>
+                    </button>
+                    <button class="w-1/2 p-3 bg-white rounded-xl card-shadow text-gray-700 flex items-center justify-center feature-item" onclick="showFeatureMessage('Digital Payments')">
+                         <i data-lucide="credit-card" class="w-5 h-5 mr-2 text-pink-500"></i> <span data-lang-key="payments">Digital Payments</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3. DETECTION & HEALTH VIEW -->
+            <div id="detection-view" class="content-view p-4 space-y-5">
+                <h2 class="text-2xl font-bold text-gray-800" data-lang-key="healthTitle">Crop Health & Prediction</h2>
+                
+                <!-- AI Crop Disease Detection (Offline-first) -->
+                <div class="bg-white p-5 rounded-xl card-shadow text-center space-y-4">
+                    <h3 class="font-bold text-xl text-red-600" data-lang-key="detectHeader">AI Crop Disease Detection</h3>
+                    <p class="text-sm text-gray-600" data-lang-key="detectSubtitle">Click a photo of the affected plant for instant analysis and remedies.</p>
+                    
+                    <button id="detect-photo-button" class="w-full py-4 bg-red-500 hover:bg-red-600 text-white font-bold text-lg rounded-xl shadow-xl flex items-center justify-center space-x-3 transition duration-200 feature-item" onclick="showDetectionModal()">
+                        <i data-lucide="camera" class="w-6 h-6"></i>
+                        <span data-lang-key="capturePhoto">Capture Photo (Offline)</span>
+                    </button>
+                </div>
+                
+                <!-- Yield Prediction & Planning -->
+                <div class="bg-white p-5 rounded-xl card-shadow space-y-3">
+                    <h3 class="font-bold text-xl text-teal-600 flex items-center">
+                        <i data-lucide="trending-up" class="w-5 h-5 mr-2"></i> AI Yield Prediction & Planner
+                    </h3>
+                    <p class="text-gray-700 text-sm" data-lang-key="yieldInfo">Prediction for current crop based on weather, disease, and growth stage: *1.8 Tons/Acre* (Last update: Today).</p>
+                    <button class="w-full py-3 bg-teal-100 hover:bg-teal-200 text-teal-800 font-semibold rounded-lg transition duration-200 feature-item" onclick="showFeatureMessage('Crop Planning Advisor')">
+                        <span data-lang-key="viewPlanner">View Crop Planning Advisor</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 4. COMMUNITY VIEW -->
+            <div id="community-view" class="content-view p-4 space-y-5">
+                <h2 class="text-2xl font-bold text-gray-800" data-lang-key="communityTitle">Farmer Community</h2>
+                
+                <!-- Community Forum -->
+                <div class="bg-white p-5 rounded-xl card-shadow">
+                    <h3 class="font-bold text-xl text-green-600 flex items-center mb-3">
+                        <i data-lucide="message-square" class="w-5 h-5 mr-2"></i> Community Forum
+                    </h3>
+                    <p class="text-gray-600 text-sm mb-3" data-lang-key="forumInfo">Discuss best practices and ask experts questions. (Requires login for real-time chat).</p>
+                    <button class="w-full py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg feature-item" onclick="showFeatureMessage('Farmer Community Forum')">
+                        <span data-lang-key="gotoForum">Go to Forum</span>
+                    </button>
+                </div>
+
+                <!-- Success Story Wall -->
+                <div class="bg-white p-5 rounded-xl card-shadow">
+                    <h3 class="font-bold text-xl text-lime-600 flex items-center mb-3">
+                        <i data-lucide="trophy" class="w-5 h-5 mr-2"></i> Success Story Wall
+                    </h3>
+                    <div class="bg-lime-50 p-3 rounded-lg text-sm text-lime-800" data-lang-key="storyExample">"How Mohan increased his yield by $25\%$ using organic methods." - Read More</div>
+                    <button class="w-full mt-3 py-3 bg-lime-100 hover:bg-lime-200 text-lime-800 font-semibold rounded-lg feature-item" onclick="showFeatureMessage('Success Story Wall')">
+                        <span data-lang-key="viewStories">View All Success Stories</span>
+                    </button>
+                </div>
+                
+                <!-- Cooperative Groups -->
+                <div class="bg-white p-5 rounded-xl card-shadow">
+                    <h3 class="font-bold text-xl text-indigo-600 flex items-center mb-3">
+                        <i data-lucide="users" class="w-5 h-5 mr-2"></i> Cooperative Groups
+                    </h3>
+                    <p class="text-gray-600 text-sm mb-3" data-lang-key="coopInfo">Join groups to access better prices for inputs and sales.</p>
+                    <button class="w-full py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold rounded-lg feature-item" onclick="showFeatureMessage('Cooperative Groups')">
+                        <span data-lang-key="joinCoop">Join a Group</span>
+                    </button>
+                </div>
+            </div>
+
+             <!-- 5. MORE / SETTINGS VIEW -->
+            <div id="more-view" class="content-view p-4 space-y-4">
+                <h2 class="text-2xl font-bold text-gray-800" data-lang-key="moreTitle">More Services</h2>
+
+                <!-- Smart Inventory & Waste Management -->
+                <div class="bg-white p-5 rounded-xl card-shadow space-y-3">
+                    <h3 class="font-bold text-xl text-yellow-600 flex items-center">
+                        <i data-lucide="package" class="w-5 h-5 mr-2"></i> Smart Inventory & Waste Management
+                    </h3>
+                    <div class="flex justify-between items-center text-gray-700">
+                        <span data-lang-key="wasteStatus">Post-Harvest Loss Status:</span>
+                        <span class="font-semibold text-red-500">30% Risk</span>
+                    </div>
+                    <p class="text-sm text-gray-600" data-lang-key="wasteTip">Recommendation: Redistribute your stored potato inventory within 7 days.</p>
+                    <button class="w-full py-3 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-semibold rounded-lg feature-item" onclick="showFeatureMessage('Manage Inventory and Waste')">
+                        <span data-lang-key="manageInventory">Manage Inventory</span>
+                    </button>
+                </div>
+                
+                <!-- Other Essential Links -->
+                <div class="bg-white rounded-xl divide-y divide-gray-100 card-shadow">
+                    <button class="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition duration-150" onclick="showFeatureMessage('Government Schemes Info')">
+                        <span class="font-medium text-gray-700 flex items-center"><i data-lucide="landmark" class="w-5 h-5 mr-3 text-blue-500"></i> <span data-lang-key="govtSchemes">Government Schemes Info</span></span>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
+                    </button>
+                    <button class="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition duration-150" onclick="showFeatureMessage('Offline Knowledge Bank')">
+                        <span class="font-medium text-gray-700 flex items-center"><i data-lucide="book-open-text" class="w-5 h-5 mr-3 text-yellow-500"></i> <span data-lang-key="offlineBank">Offline Knowledge Bank</span></span>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
+                    </button>
+                </div>
+            </div>
+            
+        </div>
+        
+    <!-- Bottom Navigation Bar (Positioned inside container so it doesn't cover viewport content) -->
+    <nav class="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-[92%] bg-white border border-gray-200 flex justify-around p-2 rounded-xl shadow-2xl z-20">
+            <button id="nav-home" class="nav-item active flex flex-col items-center p-2" data-view="home">
+                <i data-lucide="layout-dashboard" class="w-6 h-6"></i>
+                <span class="text-xs" data-lang-key="navHome">Home</span>
+            </button>
+            <button id="nav-market" class="nav-item flex flex-col items-center p-2" data-view="market">
+                <i data-lucide="store" class="w-6 h-6"></i>
+                <span class="text-xs" data-lang-key="navMarket">Marketplace</span>
+            </button>
+            <button id="nav-detection" class="nav-item flex flex-col items-center p-2" data-view="detection">
+                <i data-lucide="heart-crack" class="w-6 h-6"></i>
+                <span class="text-xs" data-lang-key="navHealth">Health</span>
+            </button>
+            <button id="nav-community" class="nav-item flex flex-col items-center p-2" data-view="community">
+                <i data-lucide="messages-square" class="w-6 h-6"></i>
+                <span class="text-xs" data-lang-key="navCommunity">Community</span>
+            </button>
+            <button id="nav-more" class="nav-item flex flex-col items-center p-2" data-view="more">
+                <i data-lucide="menu" class="w-6 h-6"></i>
+                <span class="text-xs" data-lang-key="navMore">More</span>
+            </button>
+        </nav>
+
+    </div> <!-- End of #app-container -->
+
+    <!-- Global Message Box (Non-alert replacement) -->
+    <div id="message-box" class="fixed bottom-20 z-50 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-xl opacity-0 transition-opacity duration-300 pointer-events-none">
+        Feature Name: Message
+    </div>
+    
+    <!-- AI VOICE / VIDEO MODAL (Replaces AI Assistant Modal) -->
+    <div id="voice-video-modal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
+            <!-- Modal Header -->
+            <div class="p-5 flex justify-between items-center border-b border-gray-200 bg-indigo-500 text-white">
+                <h3 class="text-xl font-bold flex items-center">
+                    <i data-lucide="volume-2" class="w-6 h-6 mr-2"></i> Voice & Video Support
+                </h3>
+                <button id="close-voice-video-modal" class="text-white hover:text-gray-200 transition duration-150">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <!-- Modal Body (Voice Assistant Tab) -->
+            <div class="p-5 space-y-4">
+                 <!-- Tab Navigation for Voice/Video -->
+                <div class="flex border-b">
+                    <button class="tab-button w-1/2 py-2 font-semibold border-b-2 border-indigo-500 text-indigo-600" data-tab="voice">Voice Assistant</button>
+                    <button class="tab-button w-1/2 py-2 font-semibold border-b-2 border-transparent text-gray-500" data-tab="video">Video Tutorials</button>
+                </div>
+
+                <!-- Voice Assistant Content -->
+                <div id="voice-tab" class="tab-content h-80 overflow-y-auto space-y-4 bg-gray-50 p-3 rounded-lg active">
+                    <!-- Initial Bot Message -->
+                    <div class="flex justify-start">
+                        <div class="bg-indigo-100 text-indigo-800 p-3 rounded-xl rounded-tl-none max-w-xs shadow-md">
+                            <span data-lang-key="voiceWelcome">Namaste! How can I assist with your farming questions today?</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Video Tutorials Content -->
+                <div id="video-tab" class="tab-content hidden h-80 overflow-y-auto space-y-4 p-3 rounded-lg">
+                    <div class="p-3 bg-white border-b rounded-lg card-shadow">
+                         <h4 class="font-semibold text-gray-800" data-lang-key="videoTitle1">Video: Organic Pest Control - Neem Solution</h4>
+                         <p class="text-sm text-gray-600" data-lang-key="videoDuration1">Duration: 3:45 (Local Language)</p>
+                    </div>
+                     <div class="p-3 bg-white border-b rounded-lg card-shadow">
+                         <h4 class="font-semibold text-gray-800" data-lang-key="videoTitle2">Video: Best practices for Kharif season sowing</h4>
+                         <p class="text-sm text-gray-600" data-lang-key="videoDuration2">Duration: 7:10 (Local Language)</p>
+                    </div>
+                    <div class="text-center p-5 text-gray-500" data-lang-key="videoInfo">Load video players here for easy learning.</div>
+                </div>
+            </div>
+            
+            <!-- Voice Assistant Input Area -->
+            <div class="p-5 border-t border-gray-200 flex items-end space-x-3" id="voice-input-container">
+                <textarea id="assistant-input" placeholder="Type your farming query here..." rows="2" class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 resize-none"></textarea>
+                <button id="send-assistant-query" class="flex-shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg transition duration-200 flex items-center justify-center h-12">
+                    <span id="send-text">Send</span>
+                    <div id="loading-indicator" class="hidden flex space-x-1">
+                        <div class="loading-dot w-2 h-2 bg-white rounded-full"></div>
+                        <div class="loading-dot w-2 h-2 bg-white rounded-full"></div>
+                        <div class="loading-dot w-2 h-2 bg-white rounded-full"></div>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- CROP DISEASE DETECTION MODAL -->
+    <div id="detection-modal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+             <!-- Modal Header -->
+            <div class="p-5 flex justify-between items-center border-b border-gray-200 bg-red-500 text-white">
+                <h3 class="text-xl font-bold flex items-center">
+                    <i data-lucide="camera" class="w-6 h-6 mr-2"></i> Crop Detection
+                </h3>
+                <button id="close-detection-modal" class="text-white hover:text-gray-200 transition duration-150">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <!-- Modal Body -->
+            <div class="p-5 space-y-4">
+                <div class="text-center text-red-600 font-semibold" data-lang-key="offlineNotice">Processing is *Offline-First* for fast results.</div>
+                <div id="detection-result" class="bg-gray-100 p-4 rounded-lg h-32 flex items-center justify-center text-gray-500 text-sm">
+                    <i data-lucide="upload-cloud" class="w-6 h-6 mr-2"></i> <span data-lang-key="uploadPrompt">Simulated: Upload or take a picture of the crop.</span>
+                </div>
+                <div id="remedy-area" class="hidden bg-green-50 p-4 rounded-lg border-l-4 border-green-500 text-green-800">
+                    <h4 class="font-bold mb-1" data-lang-key="remedyTitle">Identified: Late Blight. Organic Remedy:</h4>
+                    <p class="text-sm" data-lang-key="remedyText">Apply a mixture of buttermilk and copper sulfate solution every 5 days. Cost-effective and swadeshi.</p>
+                </div>
+                <button id="simulate-detect" class="w-full py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg feature-item" onclick="simulateDetection()">
+                    <span data-lang-key="simulateDetectBtn">Simulate Detection</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import necessary Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // --- Firebase Initialization & Auth (Kept for multi-user features) ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof _firebase_config !== 'undefined' ? JSON.parse(_firebase_config) : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db, auth, userId;
+        
+        if (firebaseConfig) {
+            setLogLevel('debug');
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            
+            onAuthStateChanged(auth, async (user) => {
+                if (user) { userId = user.uid; } 
+                else if (initialAuthToken) {
+                    try { await signInWithCustomToken(auth, initialAuthToken); userId = auth.currentUser.uid; } 
+                    catch (error) { await signInAnonymously(auth); userId = auth.currentUser.uid; }
+                } else {
+                    await signInAnonymously(auth);
+                    userId = auth.currentUser.uid;
+                }
+                // Placeholder UI update for User ID (removed from mobile view for clean design, kept in console)
+                console.log("Firebase initialized. Current User ID:", userId);
+            });
+        }
+        
+        // --- LANGUAGE SUPPORT (English/Telugu) ---
+        const translations = {
+            en: {
+                // New Onboarding Keys
+                onboardingTitle: "Welcome to Kisan-Mitra!",
+                onboardingVideoTitle: "Video Tutorial: How to use the App (Simulated)",
+                onboardingMessage: "Watch this short video to learn how to access all our features, from market prices to disease detection.",
+                startAppBtn: "Start Using App",
+                
+                // Existing Keys
+                dashboardTitle: "Your Dashboard Summary", weatherAlert: "Local forecast: Clear skies, expected temp $30^\circ$C. *Pest Alert:* Low risk, continue Neem application.", healthSummary: "Crop Health", yieldPrediction: "Predicted Yield", marketPrice: "Wheat Mandi Price", inventoryTrack: "Inventory Track", quickDetect: "Detect Disease", quickSell: "Sell Produce", quickRemind: "Reminders", marketTitle: "Swadeshi Marketplace", demandForecast: "Demand Forecast: High demand for indigenous rice varieties next month.", buySeeds: "Buy Indigenous Seeds", sellProduce: "Sell Produce", logistics: "Logistics Support", payments: "Digital Payments", healthTitle: "Crop Health & Prediction", detectHeader: "AI Crop Disease Detection", detectSubtitle: "Click a photo of the affected plant for instant analysis and remedies.", capturePhoto: "Capture Photo (Offline)", yieldInfo: "Prediction for current crop based on weather, disease, and growth stage: *1.8 Tons/Acre* (Last update: Today).", viewPlanner: "View Crop Planning Advisor", communityTitle: "Farmer Community", forumInfo: "Discuss best practices and ask experts questions. (Requires login for real-time chat).", gotoForum: "Go to Forum", storyExample: "\"How Mohan increased his yield by $25\%$ using organic methods.\" - Read More", viewStories: "View All Success Stories", coopInfo: "Join groups to access better prices for inputs and sales.", joinCoop: "Join a Group", moreTitle: "More Services", wasteStatus: "Post-Harvest Loss Status:", wasteTip: "Recommendation: Redistribute your stored potato inventory within 7 days.", manageInventory: "Manage Inventory", govtSchemes: "Government Schemes Info", offlineBank: "Offline Knowledge Bank", navHome: "Home", navMarket: "Marketplace", navHealth: "Health", navCommunity: "Community", navMore: "More", voiceWelcome: "Namaste! How can I assist with your farming questions today?", videoTitle1: "Video: Organic Pest Control - Neem Solution", videoDuration1: "Duration: 3:45 (Local Language)", videoTitle2: "Video: Best practices for Kharif season sowing", videoDuration2: "Duration: 7:10 (Local Language)", videoInfo: "Load video players here for easy learning.", offlineNotice: "Processing is *Offline-First* for fast results.", uploadPrompt: "Simulated: Upload or take a picture of the crop.", remedyTitle: "Identified: Late Blight. Organic Remedy:", remedyText: "Apply a mixture of buttermilk and copper sulfate solution every 5 days. Cost-effective and swadeshi.", simulateDetectBtn: "Simulate Detection"
+            },
+            te: {
+                 // New Onboarding Keys
+                onboardingTitle: "కిసాన్-మిత్రకు స్వాగతం!",
+                onboardingVideoTitle: "వీడియో ట్యుటోరియల్: యాప్‌ను ఎలా ఉపయోగించాలి (అనుకరణ)",
+                onboardingMessage: "మార్కెట్ ధరల నుండి వ్యాధి గుర్తింపు వరకు మా అన్ని ఫీచర్లను ఎలా యాక్సెస్ చేయాలో తెలుసుకోవడానికి ఈ చిన్న వీడియోను చూడండి.",
+                startAppBtn: "యాప్‌ను ఉపయోగించడం ప్రారంభించండి",
+
+                // Existing Keys
+                dashboardTitle: "మీ డాష్‌బోర్డ్ సారాంశం", weatherAlert: "స్థానిక వాతావరణం: ఆకాశం నిర్మలంగా, ఉష్ణోగ్రత $30^\circ$C. *తెగులు హెచ్చరిక:* తక్కువ ప్రమాదం, వేప మందు వాడకం కొనసాగించండి.", healthSummary: "పంట ఆరోగ్యం", yieldPrediction: "అంచనా వేసిన దిగుబడి", marketPrice: "గోధుమ మండి ధర", inventoryTrack: "నిల్వ ట్రాకింగ్", quickDetect: "వ్యాధిని గుర్తించండి", quickSell: "పంటను అమ్మండి", quickRemind: "రిమైండర్‌లు", marketTitle: "స్వదేశీ మార్కెట్‌ప్లేస్", demandForecast: "డిమాండ్ అంచనా: వచ్చే నెలలో స్థానిక వరి రకాలకు అధిక డిమాండ్.", buySeeds: "స్వదేశీ విత్తనాలు కొనండి", sellProduce: "పంటను అమ్మండి", logistics: "లాజిస్టిక్స్ మద్దతు", payments: "డిజిటల్ చెల్లింపులు", healthTitle: "పంట ఆరోగ్యం మరియు అంచనా", detectHeader: "AI పంట వ్యాధి గుర్తింపు", detectSubtitle: "తక్షణ విశ్లేషణ మరియు నివారణల కోసం ప్రభావితమైన మొక్క యొక్క ఫోటో తీయండి.", capturePhoto: "ఫోటో తీయండి (ఆఫ్‌లైన్)", yieldInfo: "వాతావరణం, వ్యాధి మరియు పెరుగుదల దశ ఆధారంగా ప్రస్తుత పంట అంచనా: *1.8 టన్నులు/ఎకరం* (చివరి నవీకరణ: ఈరోజు).", viewPlanner: "పంట ప్రణాళిక సలహాదారుని చూడండి", communityTitle: "రైతు సమాజం", forumInfo: "ఉత్తమ పద్ధతులను చర్చించండి మరియు నిపుణులను ప్రశ్నలు అడగండి.", gotoForum: "ఫోరమ్‌కి వెళ్లండి", storyExample: "\"సేంద్రీయ పద్ధతులను ఉపయోగించి మోహన్ తన దిగుబడిని $25\%$ ఎలా పెంచారు.\" - మరింత చదవండి", viewStories: "అన్ని విజయ గాథలను చూడండి", coopInfo: "మెరుగైన ఇన్‌పుట్ మరియు అమ్మకపు ధరల కోసం సమూహాలలో చేరండి.", joinCoop: "ఒక సమూహంలో చేరండి", moreTitle: "మరిన్ని సేవలు", wasteStatus: "పంట కోత తర్వాత నష్టం పరిస్థితి:", wasteTip: "సిఫార్సు: మీ నిల్వ చేసిన బంగాళాదుంపల స్టాక్‌ను $7$ రోజులలోపు తిరిగి పంపిణీ చేయండి.", manageInventory: "నిల్వను నిర్వహించండి", govtSchemes: "ప్రభుత్వ పథకాల సమాచారం", offlineBank: "ఆఫ్‌లైన్ జ్ఞాన బ్యాంక్", navHome: "హోమ్", navMarket: "మార్కెట్‌ప్లేస్", navHealth: "ఆరోగ్యం", navCommunity: "సమాజం", navMore: "మరింత", voiceWelcome: "నమస్కారం! ఈరోజు మీ వ్యవసాయ ప్రశ్నలకు నేను ఎలా సహాయం చేయగలను?", videoTitle1: "వీడియో: సేంద్రీయ తెగులు నియంత్రణ - వేప ద్రావణం", videoDuration1: "వ్యవధి: $3$:$45$ (స్థానిక భాష)", videoTitle2: "వీడియో: ఖరీఫ్ సీజన్ విత్తనాల కోసం ఉత్తమ పద్ధతులు", videoDuration2: "వ్యవధి: $7$:$10$ (స్థానిక భాష)", videoInfo: "సులభంగా నేర్చుకోవడానికి వీడియో ప్లేయర్‌లను ఇక్కడ లోడ్ చేయండి.", offlineNotice: "వేగవంతమైన ఫలితాల కోసం ప్రాసెసింగ్ *ఆఫ్‌లైన్-ఫస్ట్*.", uploadPrompt: "సిమ్యులేటెడ్: పంట యొక్క చిత్రాన్ని అప్‌లోడ్ చేయండి లేదా తీయండి.", remedyTitle: "గుర్తించబడింది: లేట్ బ్లైట్. సేంద్రీయ నివారణ:", remedyText: "ప్రతి $5$ రోజులకు మజ్జిగ మరియు కాపర్ సల్ఫేట్ ద్రావణం మిశ్రమాన్ని వర్తించండి. తక్కువ ఖర్చుతో కూడుకున్నది మరియు స్వదేశీ.", simulateDetectBtn: "గుర్తింపును అనుకరించండి"
+            }
+        };
+
+        let currentLang = 'en'; // Start with English
+        const langOrder = ['en', 'te']; // Cycle between English and Telugu
+        
+        const getNextLang = (current) => {
+            const currentIndex = langOrder.indexOf(current);
+            const nextIndex = (currentIndex + 1) % langOrder.length;
+            return langOrder[nextIndex];
+        };
+
+        const getLangDisplayName = (langCode) => {
+            switch (langCode) {
+                case 'en': return 'English';
+                case 'te': return 'తెలుగు';
+                default: return 'Language';
+            }
+        };
+
+
+        const applyTranslations = (lang) => {
+            document.querySelectorAll('[data-lang-key]').forEach(element => {
+                const key = element.getAttribute('data-lang-key');
+                if (translations[lang][key]) {
+                    // Use innerHTML to respect *bold* tags inside translations
+                    element.innerHTML = translations[lang][key]; 
+                }
+            });
+            const nextLang = getNextLang(lang);
+            document.getElementById('lang-toggle').textContent = getLangDisplayName(nextLang);
+        };
+
+        document.getElementById('lang-toggle').addEventListener('click', () => {
+            currentLang = getNextLang(currentLang);
+            applyTranslations(currentLang);
+        });
+        
+        // Initial application of English translations (set in HTML and confirmed here)
+        applyTranslations(currentLang);
+        
+        // --- ONBOARDING MODAL LOGIC (NEW) ---
+        const onboardingModal = document.getElementById('onboarding-modal');
+        const startAppButton = document.getElementById('start-app-button');
+
+        window.closeOnboarding = function() {
+            onboardingModal.classList.add('opacity-0');
+            setTimeout(() => {
+                onboardingModal.classList.add('hidden');
+            }, 500); // Wait for transition
+        }
+
+        startAppButton.addEventListener('click', closeOnboarding);
+
+
+        // --- NAVIGATION & UI FUNCTIONS ---
+
+        const messageBox = document.getElementById('message-box');
+        const appContainer = document.getElementById('app-container');
+
+        // Make showFeatureMessage global for inline onclicks
+        window.showFeatureMessage = function(featureName) {
+            // Use a template string for the label
+            messageBox.textContent = `Feature: ${featureName} (Mock Action)`;
+
+            // Calculate position to center the message box at the bottom of the mobile container
+            const containerRect = appContainer.getBoundingClientRect();
+            messageBox.style.left = `${containerRect.left + containerRect.width / 2}px`;
+            messageBox.style.transform = 'translateX(-50%)';
+            
+            messageBox.classList.remove('opacity-0', 'pointer-events-none');
+            messageBox.classList.add('opacity-100');
+            setTimeout(() => {
+                messageBox.classList.remove('opacity-100');
+                messageBox.classList.add('opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+        const navButtons = document.querySelectorAll('.nav-item');
+        const contentViews = document.querySelectorAll('.content-view');
+
+        window.switchView = function(viewId) {
+            // 1. Switch Active View
+            contentViews.forEach(view => {
+                view.classList.remove('active');
+            });
+            document.getElementById(`${viewId}-view`).classList.add('active');
+
+            // 2. Switch Active Nav Button
+            navButtons.forEach(button => {
+                button.classList.remove('active', 'text-green-600', 'text-gray-500'); // Remove all color states first
+                if (button.getAttribute('data-view') === viewId) {
+                    button.classList.add('active', 'text-green-600');
+                } else {
+                    button.classList.add('text-gray-500');
+                }
+            });
+            
+            // If switching to detection, close modal if open
+             const detectionModal = document.getElementById('detection-modal');
+             if (viewId !== 'detection') {
+                detectionModal.classList.remove('flex');
+                detectionModal.classList.add('hidden');
+             }
+
+             // Scroll to top of the new view
+             document.getElementById(`${viewId}-view`).scrollTop = 0;
+        }
+
+        navButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const viewId = button.getAttribute('data-view');
+                switchView(viewId);
+            });
+        });
+        
+        // --- CROP DISEASE DETECTION MODAL LOGIC (Offline Simulation) ---
+        const detectionModal = document.getElementById('detection-modal');
+        const closeDetectionModal = document.getElementById('close-detection-modal');
+        const remedyArea = document.getElementById('remedy-area');
+        const detectionResult = document.getElementById('detection-result');
+        const simulateDetectBtn = document.getElementById('simulate-detect');
+
+        window.showDetectionModal = function() {
+            detectionModal.classList.remove('hidden');
+            detectionModal.classList.add('flex');
+            remedyArea.classList.add('hidden');
+            simulateDetectBtn.disabled = false;
+        };
+
+        closeDetectionModal.addEventListener('click', () => {
+            detectionModal.classList.remove('flex');
+            detectionModal.classList.add('hidden');
+        });
+        
+        // Simulates the offline AI detection process
+        window.simulateDetection = function() {
+            simulateDetectBtn.disabled = true;
+            // Get the 'processing' text dynamically based on current language
+            const processingText = translations[currentLang].processing || 'Analyzing crop photo offline...'; 
+            detectionResult.innerHTML = `<i data-lucide="scan" class="w-6 h-6 mr-2 animate-spin text-red-500"></i> <span>${processingText}</span>`;
+            
+            // Re-apply translations for any text inside the remedy area if it becomes visible
+            // This is primarily to ensure the remedy is in the correct language when shown.
+
+            setTimeout(() => {
+                // Get the 'resultsReady' text dynamically based on current language
+                const resultsReadyText = translations[currentLang].resultsReady || 'Analysis Complete. See Remedy below.';
+                detectionResult.innerHTML = `<i data-lucide="check-circle" class="w-6 h-6 mr-2 text-green-500"></i> <span>${resultsReadyText}</span>`;
+                remedyArea.classList.remove('hidden');
+                
+                // Ensure remedy content is translated right after revealing
+                applyTranslations(currentLang);
+                lucide.createIcons(); // Re-render icons after innerHTML change
+            }, 3000); // Simulate 3 second offline processing time
+        };
+
+
+        // --- VOICE/VIDEO MODAL LOGIC (Integrated AI Assistant) ---
+        const voiceVideoModal = document.getElementById('voice-video-modal');
+        const voiceVideoButton = document.getElementById('voice-video-button');
+        const closeVoiceVideoModal = document.getElementById('close-voice-video-modal');
+        const voiceTabButton = voiceVideoModal.querySelector('[data-tab="voice"]');
+        const videoTabButton = voiceVideoModal.querySelector('[data-tab="video"]');
+        const voiceTab = document.getElementById('voice-tab');
+        const videoTab = document.getElementById('video-tab');
+        const voiceInputContainer = document.getElementById('voice-input-container');
+
+
+        voiceVideoButton.addEventListener('click', () => {
+            voiceVideoModal.classList.remove('hidden');
+            voiceVideoModal.classList.add('flex');
+            // Ensure Voice Tab is active when opening
+            switchVoiceVideoTab('voice');
+        });
+
+        closeVoiceVideoModal.addEventListener('click', () => {
+            voiceVideoModal.classList.remove('flex');
+            voiceVideoModal.classList.add('hidden');
+        });
+        
+        function switchVoiceVideoTab(tabName) {
+            // Tab Buttons
+            voiceTabButton.classList.toggle('border-indigo-500', tabName === 'voice');
+            voiceTabButton.classList.toggle('text-indigo-600', tabName === 'voice');
+            voiceTabButton.classList.toggle('border-transparent', tabName !== 'voice');
+            voiceTabButton.classList.toggle('text-gray-500', tabName !== 'voice');
+
+            videoTabButton.classList.toggle('border-indigo-500', tabName === 'video');
+            videoTabButton.classList.toggle('text-indigo-600', tabName === 'video');
+            videoTabButton.classList.toggle('border-transparent', tabName !== 'video');
+            videoTabButton.classList.toggle('text-gray-500', tabName !== 'video');
+
+            // Tab Content
+            voiceTab.classList.toggle('hidden', tabName !== 'voice');
+            videoTab.classList.toggle('hidden', tabName !== 'video');
+            
+            // Input Area only visible for Voice Tab
+            voiceInputContainer.classList.toggle('hidden', tabName !== 'voice');
+            
+            if (tabName === 'voice') {
+                // Scroll to bottom of chat
+                voiceTab.scrollTop = voiceTab.scrollHeight;
+            }
+        }
+        
+        voiceTabButton.addEventListener('click', () => switchVoiceVideoTab('voice'));
+        videoTabButton.addEventListener('click', () => switchVoiceVideoTab('video'));
+
+
+        // --- GEMINI API LOGIC (Voice Assistant) ---
+
+        const inputField = document.getElementById('assistant-input');
+        const sendButton = document.getElementById('send-assistant-query');
+        const chatHistory = document.getElementById('voice-tab'); // Using voice-tab as chat history container
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const sendText = document.getElementById('send-text');
+
+        function createChatMessage(text, isUser = false, sources = []) {
+            const container = document.createElement('div');
+            container.className = `flex ${isUser ? 'justify-end' : 'justify-start'}`;
+
+            const bubble = document.createElement('div');
+            bubble.className = `p-3 rounded-xl max-w-[80%] shadow-md break-words text-sm ${
+                isUser 
+                ? 'bg-green-500 text-white rounded-br-none' 
+                : 'bg-indigo-100 text-indigo-800 rounded-tl-none'
+            }`;
+            bubble.innerHTML = text; // Use innerHTML for source links
+            
+            container.appendChild(bubble);
+            chatHistory.appendChild(container);
+            
+            // Add citation sources if present
+            if (!isUser && sources.length > 0) {
+                const sourcesDiv = document.createElement('div');
+                sourcesDiv.className = 'text-xs text-gray-500 mt-1';
+                sourcesDiv.innerHTML = '<strong>Sources:</strong> ' + sources.map(s => {
+                    const title = (s.title || 'Source').substring(0, 30) + (s.title && s.title.length > 30 ? '...' : '');
+                    return `<a href="${s.uri}" target="_blank" class="text-blue-500 hover:underline">${title}</a>`;
+                }).join(', ');
+                bubble.appendChild(sourcesDiv);
+            }
+
+            // Scroll to the latest message
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        // Exponential backoff retry logic for fetch
+        async function retryFetch(url, options, maxRetries = 5) {
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok && response.status === 429) {
+                        const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        continue;
+                    }
+                    return response;
+                } catch (error) {
+                    if (i < maxRetries - 1) {
+                        const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        continue;
+                    }
+                    throw error;
+                }
+            }
+            throw new Error('Max retries reached for API call.');
+        }
+
+        async function generateResponse(prompt) {
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+            // Adjust system prompt to prefer Telugu if currentLang is 'te', but keep advice clear
+            const languagePreference = currentLang === 'te' ? 'Respond in Telugu first, and then include English if necessary for clarity.' : 'Respond in English.';
+
+            const systemPrompt = `You are an expert agricultural assistant named 'Kisan Mitra'. Provide concise, practical, and culturally relevant advice to Indian farmers, focusing on actionable steps, crop health, indigenous/organic remedies, market rates, or government schemes. Use simple and clear language. ${languagePreference} Prioritize clear communication over strict translation.`;
+
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                tools: [{ "google_search": {} }], 
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+            };
+
+            const options = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) };
+            
+            try {
+                // Show loading state
+                sendButton.disabled = true;
+                sendText.classList.add('hidden');
+                loadingIndicator.classList.remove('hidden');
+
+                const response = await retryFetch(apiUrl, options);
+                const result = await response.json();
+                
+                // Hide loading state
+                sendText.classList.remove('hidden');
+                loadingIndicator.classList.add('hidden');
+                sendButton.disabled = false;
+
+                const candidate = result.candidates?.[0];
+
+                if (candidate && candidate.content?.parts?.[0]?.text) {
+                    const text = candidate.content.parts[0].text;
+                    let sources = [];
+                    
+                    const groundingMetadata = candidate.groundingMetadata;
+                    if (groundingMetadata && groundingMetadata.groundingAttributions) {
+                        sources = groundingMetadata.groundingAttributions
+                            .map(attribution => ({ uri: attribution.web?.uri, title: attribution.web?.title || 'Source' }))
+                            .filter(source => source.uri);
+                    }
+                    
+                    createChatMessage(text, false, sources);
+                } else {
+                    createChatMessage("Sorry, I couldn't connect to the AI. Please try again.", false);
+                    console.error("Gemini API Response Error:", result);
+                }
+
+            } catch (error) {
+                // Hide loading state
+                sendText.classList.remove('hidden');
+                loadingIndicator.classList.add('hidden');
+                sendButton.disabled = false;
+                createChatMessage("A network error occurred. Please check your connection.", false);
+            }
+        }
+
+        sendButton.addEventListener('click', async () => {
+            const query = inputField.value.trim();
+            if (query === '' || sendButton.disabled) return;
+
+            createChatMessage(query, true);
+            inputField.value = '';
+
+            await generateResponse(query);
+        });
+
+        // Allow sending via Enter key
+        inputField.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendButton.click();
+            }
+        });
+
+        // Initial icon rendering after DOM is loaded
+        window.onload = () => {
+            // Apply translations to the entire page, including the new modal
+            applyTranslations(currentLang);
+            lucide.createIcons();
+            // Set initial language display correctly on the toggle button
+            document.getElementById('lang-toggle').textContent = getLangDisplayName(getNextLang('en')); 
+            // Simulate home click to initialize the nav bar correctly behind the splash screen
+            document.getElementById('nav-home').click(); 
+        };
+
+    </script>
+</body>
+</html>
