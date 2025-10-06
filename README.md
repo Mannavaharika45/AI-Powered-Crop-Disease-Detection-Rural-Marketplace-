@@ -1,4 +1,4 @@
-# Swadeshi for Atmanirbhar Bharat – SIH 2025 Prototype
+# Gamified Platform to Promote Sustainable Farming Practices
 - This repository contains links and files for my SIH prototype.
 - The **HTML prototype file** of our app (included in this repository).
 
