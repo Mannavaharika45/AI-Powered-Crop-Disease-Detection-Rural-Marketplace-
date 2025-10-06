@@ -3,7 +3,7 @@
 - The **HTML prototype file** of our app (included in this repository).
 
 📹 **Watch the Prototype Video on YouTube:**  
-[▶️ Click here to watch](https://youtu.be/23ksSucrJk8?feature=shared)
+[▶️ Click here to watch](https://youtu.be/CdUEknsv3sM)
 
 ## 🌐 HTML Prototype
 - We’ve included the **HTML prototype** of the app in this repository.   
